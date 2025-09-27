@@ -1,0 +1,8 @@
+version: 2
+run:
+  allow-parallel-runners: false
+  concurrency: 1
+  tests: false
+  go: "1.25"  
+linters: 
+  default: standard

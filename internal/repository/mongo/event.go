@@ -1,0 +1,76 @@
+package mongo
+
+import (
+	"context"
+
+	"github.com/m2tx/gofxtest/domain"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+)
+
+type eventRepository struct {
+	client     MongoClient
+	collection *mongo.Collection
+}
+
+func NewEventRepository(client MongoClient) domain.EventRepository {
+	collection := client.Database().Collection("events")
+
+	return &eventRepository{
+		client:     client,
+		collection: collection,
+	}
+}
+
+func (e *eventRepository) Delete(ctx context.Context, id string) error {
+	_, err := e.collection.DeleteOne(ctx, bson.M{"_id": id})
+	return err
+}
+
+func (e *eventRepository) FindAll(ctx context.Context) ([]domain.Event, error) {
+	cursor, err := e.collection.Find(ctx, bson.M{})
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var events []domain.Event
+	for cursor.Next(ctx) {
+		var event domain.Event
+		if err := cursor.Decode(&event); err != nil {
+			return nil, err
+		}
+		events = append(events, event)
+	}
+	if err := cursor.Err(); err != nil {
+		return nil, err
+	}
+
+	return events, nil
+}
+
+func (e *eventRepository) FindByID(ctx context.Context, id string) (*domain.Event, error) {
+	var event domain.Event
+	err := e.collection.FindOne(ctx, bson.M{"_id": id}).Decode(&event)
+	if err != nil {
+		return nil, err
+	}
+
+	return &event, nil
+}
+
+func (e *eventRepository) Insert(ctx context.Context, event domain.Event) (string, error) {
+	event.ID = primitive.NewObjectID().Hex()
+	result, err := e.collection.InsertOne(ctx, event)
+	if err != nil {
+		return "", err
+	}
+
+	return result.InsertedID.(string), nil
+}
+
+func (e *eventRepository) Update(ctx context.Context, event domain.Event) error {
+	_, err := e.collection.UpdateOne(ctx, bson.M{"_id": event.ID}, event)
+	return err
+}

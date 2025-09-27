@@ -1,0 +1,47 @@
+name: Registry
+on:
+  push:
+    tags:
+      - 'v*'
+    branches: 
+      - "release/*"
+  workflow_dispatch:      
+
+jobs:
+  Build:    
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4      
+    - name: Build
+      run: make build
+  Lint:
+    needs: Build
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Lint
+      run: make lint
+  Audit:
+    needs: Lint
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Audit
+      run: make audit
+  Test:
+    needs: Audit
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Test
+      run: make test
+  Publish:
+    needs: Test
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Push to registry
+      env:
+        DOCKER_USERNAME: ${{secrets.DOCKER_USERNAME}}
+        DOCKER_PASSWORD: ${{secrets.DOCKER_PASSWORD}}
+      run: make publish

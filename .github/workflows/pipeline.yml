@@ -1,0 +1,42 @@
+name: Pipeline
+on:
+  pull_request:  
+
+jobs:
+  Build:    
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4     
+    - name: Build
+      run: make build
+  Lint:
+    needs: Build
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4     
+    - name: Lint
+      run: make lint
+  Audit:
+    needs: Lint
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4     
+    - name: Audit
+      run: make audit
+  Test:
+    needs: Audit
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4     
+    - name: Test
+      run: make test
+    - name: Coverage
+      if: ${{ github.event_name == 'pull_request' }}
+      run: |
+        COVERAGEDESC=`cat ./coverage/coverage.txt | grep total`
+        COVERAGE=`echo $COVERAGEDESC | grep -Eo '[0-9]+\.[0-9]+'`
+        COLOR=`if [ ${COVERAGE%.*} -gt 80 ]; then echo "green"; else echo "red"; fi `
+        gh pr comment ${{github.event.pull_request.number}} -b "![Coverage](https://img.shields.io/badge/Coverage-${COVERAGE}%25-${COLOR})<br/>$COVERAGEDESC"
+      continue-on-error: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,14 @@
+services:
+  mongo:
+    image: mongo
+    restart: "no"
+    volumes:
+        - "mongo_data:/data/db"
+    ports:
+      - 27017:27017
+volumes:
+  mongo_data:
+    driver: local
+networks:
+  default:
+      name: ${NETWORK_NAME}      

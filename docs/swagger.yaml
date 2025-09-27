@@ -1,0 +1,122 @@
+definitions:
+  domain.Event:
+    properties:
+      date:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /events:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a list of all events
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.Event'
+            type: array
+      summary: Get all events
+    post:
+      consumes:
+      - application/json
+      description: Create a new event with the provided details
+      parameters:
+      - description: Event details
+        in: body
+        name: event
+        required: true
+        schema:
+          $ref: '#/definitions/domain.Event'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/domain.Event'
+        "400":
+          description: Invalid input
+          schema: {}
+      summary: Create a new event
+  /events/{ID}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete an existing event by its ID
+      parameters:
+      - description: Event ID
+        in: path
+        name: ID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "404":
+          description: Event not found
+          schema: {}
+      summary: Delete an event
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a single event by its ID
+      parameters:
+      - description: Event ID
+        in: path
+        name: ID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Event'
+        "404":
+          description: Event not found
+          schema: {}
+      summary: Get event by ID
+    put:
+      consumes:
+      - application/json
+      description: Update the details of an existing event by its ID
+      parameters:
+      - description: Event ID
+        in: path
+        name: ID
+        required: true
+        type: string
+      - description: Updated event details
+        in: body
+        name: event
+        required: true
+        schema:
+          $ref: '#/definitions/domain.Event'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Event'
+        "400":
+          description: Invalid input
+          schema: {}
+        "404":
+          description: Event not found
+          schema: {}
+      summary: Update an existing event
+swagger: "2.0"
