@@ -36,19 +36,20 @@ func (e *EnvError) Error() string {
 
 func New[T any]() (T, error) {
 	var t T
-	return Get(&t)
+	err := PopulateFromEnv(&t)
+	return t, err
 }
 
-func Get[T any](structEnv *T) (T, error) {
+func PopulateFromEnv[T any](structEnv *T) error {
 	fields := reflect.VisibleFields(reflect.TypeOf(*structEnv))
 	for _, f := range fields {
 		err := setEnv(f, structEnv)
 		if err != nil {
-			return *structEnv, err
+			return err
 		}
 	}
 
-	return *structEnv, nil
+	return nil
 }
 
 func setEnv[T any](f reflect.StructField, structEnv *T) error {
