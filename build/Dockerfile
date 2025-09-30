@@ -7,7 +7,7 @@ ENV GOLANG_CI_LINT_VERSION=v2.0.2
 ENV GOFLAGS="-mod=mod"
 RUN curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin ${GOLANG_CI_LINT_VERSION}
 
-ENV NANCY_VERSION=v1.0.48
+ENV NANCY_VERSION=v1.0.52
 RUN curl -o /bin/nancy https://github.com/sonatype-nexus-community/nancy/releases/download/${NANCY_VERSION}/nancy-${NANCY_VERSION}-darwin-amd64 && chmod +x /bin/nancy
 
 COPY go.mod .
