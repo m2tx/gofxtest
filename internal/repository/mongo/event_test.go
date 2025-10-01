@@ -7,10 +7,11 @@ import (
 	"github.com/m2tx/gofxtest/domain"
 	"github.com/m2tx/gofxtest/internal/repository/mongo"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 )
 
 func TestEventRepository_FindAll(t *testing.T) {
-	rep := mongo.NewEventRepository(client)
+	rep := mongo.NewEventRepository(client, zap.NewNop())
 
 	defer client.Database().Collection("events").Drop(ctx)
 
@@ -31,7 +32,7 @@ func TestEventRepository_FindAll(t *testing.T) {
 }
 
 func TestEventRepository_FindByID(t *testing.T) {
-	rep := mongo.NewEventRepository(client)
+	rep := mongo.NewEventRepository(client, zap.NewNop())
 
 	defer client.Database().Collection("events").Drop(ctx)
 
@@ -52,7 +53,7 @@ func TestEventRepository_FindByID(t *testing.T) {
 }
 
 func TestEventRepository_Insert(t *testing.T) {
-	rep := mongo.NewEventRepository(client)
+	rep := mongo.NewEventRepository(client, zap.NewNop())
 
 	defer client.Database().Collection("events").Drop(ctx)
 

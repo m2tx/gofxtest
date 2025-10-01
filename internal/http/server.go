@@ -50,7 +50,12 @@ func (h *httpServer) Start() error {
 
 	h.logger.Info("HTTP server started", zap.String("addr", h.server.Addr))
 
-	go h.server.Serve(ln)
+	go func() {
+		err := h.server.Serve(ln)
+		if err != nil {
+			h.logger.Error("HTTP server starting error", zap.Error(err))
+		}
+	}()
 
 	return nil
 }

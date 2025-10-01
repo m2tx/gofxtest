@@ -7,19 +7,22 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.uber.org/zap"
 )
 
 type eventRepository struct {
 	client     MongoClient
 	collection *mongo.Collection
+	logger     *zap.Logger
 }
 
-func NewEventRepository(client MongoClient) domain.EventRepository {
+func NewEventRepository(client MongoClient, logger *zap.Logger) domain.EventRepository {
 	collection := client.Database().Collection("events")
 
 	return &eventRepository{
 		client:     client,
 		collection: collection,
+		logger:     logger,
 	}
 }
 
@@ -33,7 +36,12 @@ func (e *eventRepository) FindAll(ctx context.Context) ([]domain.Event, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer cursor.Close(ctx)
+	defer func() {
+		err := cursor.Close(ctx)
+		if err != nil {
+			e.logger.Error("error closing cursor event repository", zap.Error(err))
+		}
+	}()
 
 	var events []domain.Event
 	for cursor.Next(ctx) {
