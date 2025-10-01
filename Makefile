@@ -15,6 +15,10 @@ COMPOSE_FILE = ./build/docker-compose.yml
 __docker-build: guard-DOCKER_BUILD_TARGET
 	docker build --tag=$(NAME) --progress=plain --target=$(DOCKER_BUILD_TARGET) $(DOCKER_BUILD_ARGS) -f $(DOCKER_FILE) .
 
+__docker-build-tools: guard-APP guard-APP_VERSION
+	docker build --tag=$(NAME):$(APP)-$(APP_VERSION)  --build-arg VERSION=$(APP_VERSION) -f $(DOCKER_FILE).$(APP) .
+	docker run --rm -v $(shell pwd):/app -w /app $(NAME):$(APP)-$(APP_VERSION)
+
 __compose:
 	DOCKER_BUILDKIT=1 \
 	NETWORK_NAME=$(DOCKER_NETWORK) \
@@ -51,16 +55,19 @@ swag:
 	swag init -g ./internal/http/* -o ./docs
 
 lint:
-	DOCKER_BUILDKIT=1 \
-	DOCKER_BUILD_ARGS=" --build-arg NAME=${NAME} --build-arg MODULE=${MODULE} " \
-	DOCKER_BUILD_TARGET=lint \
-	make __docker-build
+	APP=golangci \
+	APP_VERSION=v2.5.0 \
+	make __docker-build-tools
 
-audit:
-	DOCKER_BUILDKIT=1 \
-	DOCKER_BUILD_ARGS=" --build-arg NAME=${NAME} --build-arg MODULE=${MODULE} " \
-	DOCKER_BUILD_TARGET=audit \
-	make __docker-build
+audit-gosec:
+	APP=gosec \
+	APP_VERSION=v2.22.9 \
+	make __docker-build-tools
+
+audit-osvscanner:
+	APP=osvscanner \
+	APP_VERSION=v2.2.2 \
+	make __docker-build-tools
 
 test: env-up-mongo test-run test-clean
 

@@ -1,0 +1,5 @@
+FROM golang:1.25
+ARG VERSION
+WORKDIR /app
+RUN go install github.com/securego/gosec/v2/cmd/gosec@${VERSION}
+ENTRYPOINT ["gosec", "-tests", "./..."]

@@ -26,8 +26,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - name: Audit
-      run: make audit
+    - name: Audit OSV Scanner
+      run: make audit-osvscanner
+    - name: Audit GoSec
+      run: make audit-gosec
   Test:
     needs: Audit
     runs-on: ubuntu-latest
