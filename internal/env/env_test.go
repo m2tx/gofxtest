@@ -24,12 +24,17 @@ func test[T any](t *testing.T, testcases []testcase[T]) {
 		t.Run(fmt.Sprintf("CASE %d - %s", i, tcase.name), func(t *testing.T) {
 			if len(tcase.env) > 0 {
 				for k, v := range tcase.env {
-					os.Setenv(k, v)
-
+					err := os.Setenv(k, v)
+					if err != nil {
+						assert.Fail(t, "error setenv")
+					}
 				}
 				defer func() {
 					for k := range tcase.env {
-						os.Unsetenv(k)
+						err := os.Unsetenv(k)
+						if err != nil {
+							assert.Fail(t, "error unsetenv")
+						}
 					}
 				}()
 			}
