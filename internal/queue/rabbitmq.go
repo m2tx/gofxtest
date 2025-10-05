@@ -88,8 +88,8 @@ func (r *rabbitMQ) Subscribe(ctx context.Context, topic string, handler HandlerF
 	err := r.channel.ExchangeDeclare(
 		topic,    // exchange name
 		"fanout", // exchange type (use "fanout" for pub/sub)
-		false,    // durable
-		true,     // auto-deleted
+		true,     // durable
+		false,    // auto-deleted
 		false,    // internal
 		false,    // no-wait
 		nil,      // arguments
@@ -106,8 +106,8 @@ func (r *rabbitMQ) Subscribe(ctx context.Context, topic string, handler HandlerF
 
 	queue, err := r.channel.QueueDeclare(
 		fmt.Sprintf("%s-%s", r.config.QueuePrefix, topic), // name
-		false, // durable
-		true,  // delete when unused
+		true,  // durable
+		false, // delete when unused
 		true,  // exclusive
 		false, // no-wait
 		nil,   // arguments
