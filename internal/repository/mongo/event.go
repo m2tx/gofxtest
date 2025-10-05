@@ -27,8 +27,14 @@ func NewEventRepository(client MongoClient, logger *zap.Logger) domain.EventRepo
 }
 
 func (e *eventRepository) Delete(ctx context.Context, id string) error {
-	_, err := e.collection.DeleteOne(ctx, bson.M{"_id": id})
-	return err
+	where := bson.M{"_id": id}
+
+	_, err := e.collection.DeleteOne(ctx, where)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (e *eventRepository) FindAll(ctx context.Context) ([]domain.Event, error) {
@@ -79,6 +85,16 @@ func (e *eventRepository) Insert(ctx context.Context, event domain.Event) (strin
 }
 
 func (e *eventRepository) Update(ctx context.Context, event domain.Event) error {
-	_, err := e.collection.UpdateOne(ctx, bson.M{"_id": event.ID}, event)
-	return err
+	where := bson.M{"_id": event.ID}
+
+	set := bson.M{
+		"$set": event,
+	}
+
+	_, err := e.collection.UpdateOne(ctx, where, set)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

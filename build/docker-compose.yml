@@ -1,4 +1,13 @@
 services:
+  rabbitmq:
+    image: rabbitmq:management-alpine
+    restart: "no"
+    volumes:
+      - "rabbitmq_data:/var/lib/rabbitmq/"
+      - "rabbitmq_log:/var/log/rabbitmq/"
+    ports:
+      - 5672:5672
+      - 15672:15672
   mongo:
     image: mongo
     restart: "no"
@@ -9,6 +18,10 @@ services:
 volumes:
   mongo_data:
     driver: local
+  rabbitmq_data:
+    driver: local
+  rabbitmq_log:
+    driver: local    
 networks:
   default:
       name: ${NETWORK_NAME}      

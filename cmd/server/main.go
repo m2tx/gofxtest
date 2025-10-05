@@ -2,10 +2,12 @@ package main
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/m2tx/gofxtest/domain/event"
 	"github.com/m2tx/gofxtest/internal/env"
 	"github.com/m2tx/gofxtest/internal/http"
+	"github.com/m2tx/gofxtest/internal/queue"
 	"github.com/m2tx/gofxtest/internal/repository/mongo"
 	"go.uber.org/fx"
 	"go.uber.org/fx/fxevent"
@@ -22,6 +24,8 @@ func main() {
 		fx.Provide(env.New[AppConfig]),
 		fx.Provide(env.New[http.HttpConfig]),
 		fx.Provide(env.New[mongo.MongoConfig]),
+		fx.Provide(env.New[queue.RabbitMQConfig]),
+		fx.Provide(AsQueue(queue.NewRabbitMQ)),
 		fx.Provide(mongo.NewClient),
 		fx.Provide(mongo.NewEventRepository),
 		fx.Provide(event.NewEventService),
@@ -62,6 +66,31 @@ func main() {
 				},
 			})
 		}),
+		fx.Invoke(func(lc fx.Lifecycle, srv queue.Subscriber) {
+			lc.Append(fx.Hook{
+				OnStart: func(ctx context.Context) error {
+					err := srv.Subscribe(ctx, event.EventCreatedTopic, func(msg queue.Message) {
+						fmt.Printf("consume event-created %s\n", string(msg.Data))
+					})
+					if err != nil {
+						return err
+					}
+					err = srv.Subscribe(ctx, event.EventUpdatedTopic, func(msg queue.Message) {
+						fmt.Printf("consume event-updated %s\n", string(msg.Data))
+					})
+					if err != nil {
+						return err
+					}
+					err = srv.Subscribe(ctx, event.EventDeletedTopic, func(msg queue.Message) {
+						fmt.Printf("consume event-deleted %s\n", string(msg.Data))
+					})
+					if err != nil {
+						return err
+					}
+					return nil
+				},
+			})
+		}),
 	).Run()
 }
 
@@ -70,5 +99,13 @@ func AsRouteHandler(f any) any {
 		f,
 		fx.As(new(http.RouteHandler)),
 		fx.ResultTags(`group:"routeHandlers"`),
+	)
+}
+
+func AsQueue(f any) any {
+	return fx.Annotate(
+		f,
+		fx.As(new(queue.Publisher)),
+		fx.As(new(queue.Subscriber)),
 	)
 }
