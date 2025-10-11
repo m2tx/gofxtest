@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/m2tx/gofxtest/domain/event"
 	"github.com/m2tx/gofxtest/internal/env"
@@ -66,23 +65,23 @@ func main() {
 				},
 			})
 		}),
-		fx.Invoke(func(lc fx.Lifecycle, srv queue.Subscriber) {
+		fx.Invoke(func(lc fx.Lifecycle, srv queue.Subscriber, log *zap.Logger) {
 			lc.Append(fx.Hook{
 				OnStart: func(ctx context.Context) error {
 					err := srv.Subscribe(ctx, event.EventCreatedTopic, func(msg queue.Message) {
-						fmt.Printf("consume event-created %s\n", string(msg.Data))
+						log.Info("consume event-created", zap.String("data", string(msg.Data)))
 					})
 					if err != nil {
 						return err
 					}
 					err = srv.Subscribe(ctx, event.EventUpdatedTopic, func(msg queue.Message) {
-						fmt.Printf("consume event-updated %s\n", string(msg.Data))
+						log.Info("consume event-updated", zap.String("data", string(msg.Data)))
 					})
 					if err != nil {
 						return err
 					}
 					err = srv.Subscribe(ctx, event.EventDeletedTopic, func(msg queue.Message) {
-						fmt.Printf("consume event-deleted %s\n", string(msg.Data))
+						log.Info("consume event-deleted", zap.String("data", string(msg.Data)))
 					})
 					if err != nil {
 						return err

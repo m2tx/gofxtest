@@ -19,7 +19,7 @@ func NewEventRoute(eventService domain.EventService) RouteHandler {
 	}
 }
 
-func (r *eventRoute) Handler(e *gin.Engine) {
+func (r *eventRoute) Register(e *gin.Engine) {
 	g := e.Group("/events")
 	g.GET("", r.events)
 	g.GET(":ID", r.eventByID)

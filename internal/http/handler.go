@@ -1,6 +1,7 @@
 package http
 
 import (
+	"io"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -8,7 +9,7 @@ import (
 )
 
 type RouteHandler interface {
-	Handler(g *gin.Engine)
+	Register(g *gin.Engine)
 }
 
 type Handler interface {
@@ -22,11 +23,17 @@ type handler struct {
 
 func NewHandler(routeHandlers []RouteHandler, logger *zap.Logger) Handler {
 	gin.SetMode(gin.ReleaseMode)
+	gin.DefaultWriter = io.Discard
 
 	gHandler := gin.Default()
 
+	gHandler.Use(func(ctx *gin.Context) {
+		logger.Debug("access", zap.String("uri", ctx.Request.RequestURI), zap.String("method", ctx.Request.Method))
+		ctx.Next()
+	})
+
 	for _, route := range routeHandlers {
-		route.Handler(gHandler)
+		route.Register(gHandler)
 	}
 
 	return &handler{

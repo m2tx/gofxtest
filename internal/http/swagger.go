@@ -16,6 +16,6 @@ func NewSwaggerRoute() RouteHandler {
 	return &swaggerRoute{}
 }
 
-func (r *swaggerRoute) Handler(e *gin.Engine) {
+func (r *swaggerRoute) Register(e *gin.Engine) {
 	e.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 }

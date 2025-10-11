@@ -14,7 +14,7 @@ func NewHealthcheckRoute() RouteHandler {
 	return &healthcheckRoute{}
 }
 
-func (r *healthcheckRoute) Handler(e *gin.Engine) {
+func (r *healthcheckRoute) Register(e *gin.Engine) {
 	e.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "OK"})
 	})
