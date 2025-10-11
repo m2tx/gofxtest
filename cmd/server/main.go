@@ -24,7 +24,7 @@ func main() {
 		fx.Provide(env.New[http.HttpConfig]),
 		fx.Provide(env.New[mongo.MongoConfig]),
 		fx.Provide(env.New[queue.RabbitMQConfig]),
-		fx.Provide(AsQueue(queue.NewRabbitMQ)),
+		fx.Provide(asQueue(queue.NewRabbitMQ)),
 		fx.Provide(mongo.NewClient),
 		fx.Provide(mongo.NewEventRepository),
 		fx.Provide(event.NewEventService),
@@ -32,68 +32,22 @@ func main() {
 			http.NewHandler,
 			fx.ParamTags(`group:"routeHandlers"`),
 		)),
-		fx.Provide(AsRouteHandler(http.NewHealthcheckRoute)),
-		fx.Provide(AsRouteHandler(http.NewSwaggerRoute)),
-		fx.Provide(AsRouteHandler(http.NewEventRoute)),
-		fx.Provide(func(config AppConfig) (*zap.Logger, error) {
-			logger, err := zap.NewProduction()
-			if err != nil {
-				return nil, err
-			}
-
-			return logger.Named(config.ServiceName), nil
-		}),
+		fx.Provide(asRouteHandler(http.NewHealthcheckRoute)),
+		fx.Provide(asRouteHandler(http.NewSwaggerRoute)),
+		fx.Provide(asRouteHandler(http.NewEventRoute)),
+		fx.Provide(configLogger),
 		fx.WithLogger(func(log *zap.Logger) fxevent.Logger {
 			return &fxevent.ZapLogger{
 				Logger: log,
 			}
 		}),
-		fx.Invoke(func(lc fx.Lifecycle, client mongo.MongoClient) {
-			lc.Append(fx.Hook{
-				OnStop: func(ctx context.Context) error {
-					return client.Disconnect(ctx)
-				},
-			})
-		}),
-		fx.Invoke(func(lc fx.Lifecycle, srv http.HttpServer) {
-			lc.Append(fx.Hook{
-				OnStart: func(ctx context.Context) error {
-					return srv.Start()
-				},
-				OnStop: func(ctx context.Context) error {
-					return srv.Shutdown(ctx)
-				},
-			})
-		}),
-		fx.Invoke(func(lc fx.Lifecycle, srv queue.Subscriber, log *zap.Logger) {
-			lc.Append(fx.Hook{
-				OnStart: func(ctx context.Context) error {
-					err := srv.Subscribe(ctx, event.EventCreatedTopic, func(msg queue.Message) {
-						log.Info("consume event-created", zap.String("data", string(msg.Data)))
-					})
-					if err != nil {
-						return err
-					}
-					err = srv.Subscribe(ctx, event.EventUpdatedTopic, func(msg queue.Message) {
-						log.Info("consume event-updated", zap.String("data", string(msg.Data)))
-					})
-					if err != nil {
-						return err
-					}
-					err = srv.Subscribe(ctx, event.EventDeletedTopic, func(msg queue.Message) {
-						log.Info("consume event-deleted", zap.String("data", string(msg.Data)))
-					})
-					if err != nil {
-						return err
-					}
-					return nil
-				},
-			})
-		}),
+		fx.Invoke(mongoDisconnect),
+		fx.Invoke(startHTTPServer),
+		fx.Invoke(subscriber),
 	).Run()
 }
 
-func AsRouteHandler(f any) any {
+func asRouteHandler(f any) any {
 	return fx.Annotate(
 		f,
 		fx.As(new(http.RouteHandler)),
@@ -101,10 +55,64 @@ func AsRouteHandler(f any) any {
 	)
 }
 
-func AsQueue(f any) any {
+func asQueue(f any) any {
 	return fx.Annotate(
 		f,
 		fx.As(new(queue.Publisher)),
 		fx.As(new(queue.Subscriber)),
 	)
+}
+
+func configLogger(config AppConfig) (*zap.Logger, error) {
+	logger, err := zap.NewProduction()
+	if err != nil {
+		return nil, err
+	}
+
+	return logger.Named(config.ServiceName), nil
+}
+
+func subscriber(lc fx.Lifecycle, srv queue.Subscriber, log *zap.Logger) {
+	lc.Append(fx.Hook{
+		OnStart: func(ctx context.Context) error {
+			err := srv.Subscribe(ctx, event.EventCreatedTopic, func(msg queue.Message) {
+				log.Info("consume event-created", zap.String("data", string(msg.Data)))
+			})
+			if err != nil {
+				return err
+			}
+			err = srv.Subscribe(ctx, event.EventUpdatedTopic, func(msg queue.Message) {
+				log.Info("consume event-updated", zap.String("data", string(msg.Data)))
+			})
+			if err != nil {
+				return err
+			}
+			err = srv.Subscribe(ctx, event.EventDeletedTopic, func(msg queue.Message) {
+				log.Info("consume event-deleted", zap.String("data", string(msg.Data)))
+			})
+			if err != nil {
+				return err
+			}
+			return nil
+		},
+	})
+}
+
+func startHTTPServer(lc fx.Lifecycle, srv http.HttpServer) {
+	lc.Append(fx.Hook{
+		OnStart: func(ctx context.Context) error {
+			return srv.Start()
+		},
+		OnStop: func(ctx context.Context) error {
+			return srv.Shutdown(ctx)
+		},
+	})
+}
+
+func mongoDisconnect(lc fx.Lifecycle, client mongo.MongoClient) {
+	lc.Append(fx.Hook{
+		OnStop: func(ctx context.Context) error {
+			return client.Disconnect(ctx)
+		},
+	})
 }
