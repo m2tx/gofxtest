@@ -20,9 +20,11 @@ const (
 	errorMsgUnsupportedType = "unsupported type %s"
 	errorMsgRequired        = "is required"
 	errorFieldEnv           = "field %s: %s"
-	errorMsgMinValue        = "value %d is less than minimum %d"
-	errorMsgMaxValue        = "value %d is greater than maximum %d"
+	errorMsgMinValue        = "value %v is less than minimum %v"
+	errorMsgMaxValue        = "value %v is greater than maximum %v"
 	errorEnv                = "environment variable %s: %s"
+
+	bitSizeFloat = 64
 )
 
 type EnvError struct {
@@ -85,6 +87,13 @@ func setEnv[T any](f reflect.StructField, structEnv *T) error {
 				}
 
 				fv.SetInt(int64(vInt))
+			case float32, float64:
+				vFloat, err := getEnvFloat(tagEnv, tagEnvDefault, isRequired, f.Tag)
+				if err != nil {
+					return err
+				}
+
+				fv.SetFloat(vFloat)
 			case bool:
 				vBool, err := getEnvBool(tagEnv, tagEnvDefault, isRequired)
 				if err != nil {
@@ -118,6 +127,23 @@ func tagToInt(tag reflect.StructTag, tagKey string, envKey string) (int, bool, e
 	}
 
 	return vInt, true, nil
+}
+
+func tagToFloat(tag reflect.StructTag, tagKey string, envKey string) (float64, bool, error) {
+	v := tag.Get(tagKey)
+	if v == "" {
+		return 0, false, nil
+	}
+
+	vFloat, err := strconv.ParseFloat(v, bitSizeFloat)
+	if err != nil {
+		return 0, true, &EnvError{
+			Env: envKey,
+			Msg: fmt.Sprintf(errorFieldEnv, tagKey, err.Error()),
+		}
+	}
+
+	return vFloat, true, nil
 }
 
 func tagToBool(tag reflect.StructTag, tagKey string, envKey string) (bool, error) {
@@ -247,4 +273,52 @@ func getEnvBool(key string, defaultValue string, required bool) (bool, error) {
 	}
 
 	return vBool, nil
+}
+
+func getEnvFloat(key string, defaultValue string, required bool, tag reflect.StructTag) (float64, error) {
+	v := os.Getenv(key)
+	if v == "" && defaultValue != "" {
+		v = defaultValue
+	}
+
+	if v == "" && required {
+		return 0, &EnvError{
+			Env: key,
+			Msg: errorMsgRequired,
+		}
+	}
+
+	vFloat, err := strconv.ParseFloat(v, bitSizeFloat)
+	if err != nil {
+		return 0, &EnvError{
+			Env: key,
+			Msg: err.Error(),
+		}
+	}
+
+	min, ok, err := tagToFloat(tag, TagMin, key)
+	if err != nil {
+		return 0, err
+	}
+
+	if vFloat < min && ok {
+		return 0, &EnvError{
+			Env: key,
+			Msg: fmt.Sprintf(errorMsgMinValue, vFloat, min),
+		}
+	}
+
+	max, ok, err := tagToFloat(tag, TagMax, key)
+	if err != nil {
+		return 0, err
+	}
+
+	if vFloat > max && ok {
+		return 0, &EnvError{
+			Env: key,
+			Msg: fmt.Sprintf(errorMsgMaxValue, vFloat, max),
+		}
+	}
+
+	return vFloat, nil
 }
