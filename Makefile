@@ -85,6 +85,7 @@ test-clean:
 	docker rm -fv $(NAME)-test
 
 open-coverage: test
+	sed -i 's/black/whitesmoke/g' $(shell pwd)/coverage/coverage.html
 	open $(shell pwd)/coverage/coverage.html
 
 build:
