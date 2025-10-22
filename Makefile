@@ -59,6 +59,8 @@ lint:
 	APP_VERSION=v2.5.0 \
 	make __docker-build-tools
 
+audit: audit-osvscanner
+
 audit-gosec:
 	APP=gosec \
 	APP_VERSION=v2.22.9 \
@@ -84,7 +86,7 @@ test-run:
 test-clean:
 	docker rm -fv $(NAME)-test
 
-open-coverage: test
+coverage: test
 	sed -i 's/black/whitesmoke/g' $(shell pwd)/coverage/coverage.html
 	open $(shell pwd)/coverage/coverage.html
 

@@ -33,13 +33,16 @@ go run ./cmd/server/main.go
 
 ## Makefile Commands
 
-| Command      | Description                  |
-|--------------|-----------------------------|
-| `make install` | Install Go dependencies      |
-| `make lint`    | Run code linter              |
-| `make audit`   | Audit dependencies for vulnerabilities |
-| `make test`    | Run tests and show coverage  |
-| `make swag`    | Generate Swagger API docs    |
+| Command          | Description                            |
+|------------------|----------------------------------------|
+| `make install`   | Install Go dependencies                |
+| `make env-up`    | Start mongodb and rabbitmq             |
+| `make env-down`  | Stop mongodb and rabbitmq              |
+| `make lint`      | Run code linter                        |
+| `make audit`     | Audit dependencies for vulnerabilities |
+| `make test`      | Run tests                              |
+| `make swag`      | Generate Swagger API docs              |
+| `make converage` | Run tests and show coverage            |
 
 ## API Documentation
 
