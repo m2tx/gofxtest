@@ -108,3 +108,6 @@ publish: image
 	docker push ${DOCKER_USERNAME}/${NAME}:${TAG}
 
 destroy: test-clean env-down
+
+run: env-up
+	export $(shell grep -v '^#' .env | xargs) && go run ./cmd/server/main.go	
