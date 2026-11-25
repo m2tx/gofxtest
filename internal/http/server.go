@@ -16,6 +16,7 @@ type HttpServer interface {
 }
 
 type HttpConfig struct {
+	ServiceName     string        `env:"NAME" default:"gofxtest"`
 	Port            int           `env:"HTTP_PORT" default:"8080"`
 	ShutdownTimeout time.Duration `env:"HTTP_SHUTDOWN_TIMEOUT" default:"5s"`
 	ReadTimeout     time.Duration `env:"HTTP_READ_TIMEOUT" default:"10s"`

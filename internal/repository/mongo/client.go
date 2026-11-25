@@ -3,8 +3,10 @@ package mongo
 import (
 	"context"
 
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/event"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 )
 
@@ -24,15 +26,22 @@ type mongoClient struct {
 	client   *mongo.Client
 	database *mongo.Database
 	logger   *zap.Logger
+	monitor  *event.CommandMonitor
 }
 
-func NewClient(ctx context.Context, config MongoConfig, logger *zap.Logger) (MongoClient, error) {
-	client := &mongoClient{
-		config: config,
-		logger: logger,
+func NewClient(ctx context.Context, config MongoConfig, logger *zap.Logger, meterProvider metric.MeterProvider) (MongoClient, error) {
+	monitor, err := newCommandMonitor(meterProvider)
+	if err != nil {
+		return nil, err
 	}
 
-	err := client.Connect(ctx)
+	client := &mongoClient{
+		config:  config,
+		logger:  logger,
+		monitor: monitor,
+	}
+
+	err = client.Connect(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -41,7 +50,7 @@ func NewClient(ctx context.Context, config MongoConfig, logger *zap.Logger) (Mon
 }
 
 func (m *mongoClient) Connect(ctx context.Context) error {
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(m.config.URL))
+	client, err := mongo.Connect(options.Client().ApplyURI(m.config.URL).SetMonitor(m.monitor))
 	if err != nil {
 		return err
 	}

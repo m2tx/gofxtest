@@ -4,9 +4,8 @@ import (
 	"context"
 
 	"github.com/m2tx/gofxtest/domain"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.uber.org/zap"
 )
 
@@ -75,7 +74,7 @@ func (e *eventRepository) FindByID(ctx context.Context, id string) (*domain.Even
 }
 
 func (e *eventRepository) Insert(ctx context.Context, event domain.Event) (string, error) {
-	event.ID = primitive.NewObjectID().Hex()
+	event.ID = bson.NewObjectID().Hex()
 	result, err := e.collection.InsertOne(ctx, event)
 	if err != nil {
 		return "", err

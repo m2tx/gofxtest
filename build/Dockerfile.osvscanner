@@ -1,4 +1,4 @@
-FROM golang:1.25
+FROM golang:1.27.4
 ARG VERSION
 WORKDIR /app
 RUN go install github.com/google/osv-scanner/v2/cmd/osv-scanner@${VERSION}

@@ -6,8 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 )
 
@@ -23,9 +26,15 @@ type rabbitMQ struct {
 	mu       sync.Mutex
 	handlers map[string]HandlerFunc
 	logger   *zap.Logger
+	metrics  *queueMetrics
 }
 
-func NewRabbitMQ(config RabbitMQConfig, logger *zap.Logger) (*rabbitMQ, error) {
+func NewRabbitMQ(config RabbitMQConfig, logger *zap.Logger, meterProvider metric.MeterProvider) (*rabbitMQ, error) {
+	metrics, err := newQueueMetrics(meterProvider)
+	if err != nil {
+		return nil, err
+	}
+
 	conn, err := amqp.Dial(config.URL)
 	if err != nil {
 		return nil, err
@@ -42,6 +51,7 @@ func NewRabbitMQ(config RabbitMQConfig, logger *zap.Logger) (*rabbitMQ, error) {
 		channel:  ch,
 		handlers: make(map[string]HandlerFunc),
 		logger:   logger,
+		metrics:  metrics,
 	}, nil
 }
 
@@ -71,7 +81,7 @@ func (r *rabbitMQ) publish(ctx context.Context, topic string, msg Message) error
 		headers[k] = v
 	}
 
-	return r.channel.PublishWithContext(ctx,
+	err := r.channel.PublishWithContext(ctx,
 		topic, // exchange
 		"",    // routing key
 		false, // mandatory
@@ -82,6 +92,13 @@ func (r *rabbitMQ) publish(ctx context.Context, topic string, msg Message) error
 			Body:        msg.Data,
 		},
 	)
+
+	r.metrics.published.Add(ctx, 1, metric.WithAttributes(
+		attribute.String(attrTopic, topic),
+		attribute.String(attrStatus, status(err)),
+	))
+
+	return err
 }
 
 func (r *rabbitMQ) Subscribe(ctx context.Context, topic string, handler HandlerFunc) error {
@@ -146,6 +163,10 @@ func (r *rabbitMQ) Subscribe(ctx context.Context, topic string, handler HandlerF
 
 	r.logger.Debug("rabbitmq start consumer", zap.String("topic", topic), zap.String("queue", queue.Name))
 
+	// The subscribe context belongs to the caller (e.g. an fx OnStart hook) and
+	// may be cancelled once Subscribe returns, so the consumer must not inherit it.
+	consumeCtx := context.WithoutCancel(ctx)
+
 	go func() {
 		for d := range msgs {
 			headers := map[string]string{}
@@ -160,7 +181,12 @@ func (r *rabbitMQ) Subscribe(ctx context.Context, topic string, handler HandlerF
 				Data:    d.Body,
 			}
 
+			start := time.Now()
 			handler(msg)
+
+			r.metrics.consumeDuration.Record(consumeCtx, time.Since(start).Seconds(),
+				metric.WithAttributes(attribute.String(attrTopic, topic)),
+			)
 		}
 	}()
 
