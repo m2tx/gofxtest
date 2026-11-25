@@ -3,6 +3,7 @@ package queue
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sync"
 
@@ -32,8 +33,7 @@ func NewRabbitMQ(config RabbitMQConfig, logger *zap.Logger) (*rabbitMQ, error) {
 
 	ch, err := conn.Channel()
 	if err != nil {
-		conn.Close()
-		return nil, err
+		return nil, errors.Join(err, conn.Close())
 	}
 
 	return &rabbitMQ{
@@ -168,11 +168,14 @@ func (r *rabbitMQ) Subscribe(ctx context.Context, topic string, handler HandlerF
 }
 
 func (r *rabbitMQ) Close() error {
+	var errs []error
 	if r.channel != nil {
-		r.channel.Close()
+		errs = append(errs, r.channel.Close())
 	}
+
 	if r.conn != nil {
-		r.conn.Close()
+		errs = append(errs, r.conn.Close())
 	}
-	return nil
+
+	return errors.Join(errs...)
 }
