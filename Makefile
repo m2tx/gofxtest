@@ -56,19 +56,19 @@ swag:
 
 lint:
 	APP=golangci \
-	APP_VERSION=v2.5.0 \
+	APP_VERSION=v2.15.0 \
 	make __docker-build-tools
 
 audit: audit-osvscanner
 
 audit-gosec:
 	APP=gosec \
-	APP_VERSION=v2.22.9 \
+	APP_VERSION=v2.30.0 \
 	make __docker-build-tools
 
 audit-osvscanner:
 	APP=osvscanner \
-	APP_VERSION=v2.2.2 \
+	APP_VERSION=v2.7.1 \
 	make __docker-build-tools
 
 test: env-up-mongo test-run test-clean

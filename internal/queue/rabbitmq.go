@@ -163,6 +163,10 @@ func (r *rabbitMQ) Subscribe(ctx context.Context, topic string, handler HandlerF
 
 	r.logger.Debug("rabbitmq start consumer", zap.String("topic", topic), zap.String("queue", queue.Name))
 
+	// The subscribe context belongs to the caller (e.g. an fx OnStart hook) and
+	// may be cancelled once Subscribe returns, so the consumer must not inherit it.
+	consumeCtx := context.WithoutCancel(ctx)
+
 	go func() {
 		for d := range msgs {
 			headers := map[string]string{}
@@ -180,7 +184,7 @@ func (r *rabbitMQ) Subscribe(ctx context.Context, topic string, handler HandlerF
 			start := time.Now()
 			handler(msg)
 
-			r.metrics.consumeDuration.Record(context.Background(), time.Since(start).Seconds(),
+			r.metrics.consumeDuration.Record(consumeCtx, time.Since(start).Seconds(),
 				metric.WithAttributes(attribute.String(attrTopic, topic)),
 			)
 		}

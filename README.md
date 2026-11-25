@@ -18,7 +18,7 @@ GoFxTest is a starter project built with [Go](https://golang.org/) and [Uber FX]
 
 ### Prerequisites
 
-- Go 1.25+
+- Go 1.27+
 - Docker with Docker Compose, which the Makefile uses to run MongoDB, RabbitMQ, the tests, the linter and the auditors
 
 ### Installation

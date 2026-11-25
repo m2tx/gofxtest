@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-Go 1.25 starter service built on Uber FX (dependency injection) with a Gin HTTP API, MongoDB persistence, and RabbitMQ pub/sub. Module path: `github.com/m2tx/gofxtest`.
+Go 1.27 starter service built on Uber FX (dependency injection) with a Gin HTTP API, MongoDB persistence, and RabbitMQ pub/sub. Module path: `github.com/m2tx/gofxtest`.
 
 ## Commands
 

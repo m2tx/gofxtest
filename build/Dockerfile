@@ -1,4 +1,4 @@
-FROM golang:1.25-bookworm AS base
+FROM golang:1.27.4-bookworm AS base
 ARG NAME
 ARG MODULE
 WORKDIR $GOPATH/src/${MODULE}

@@ -3,6 +3,6 @@ run:
   allow-parallel-runners: false
   concurrency: 1
   tests: false
-  go: "1.25"  
+  go: "1.27"  
 linters: 
   default: standard
