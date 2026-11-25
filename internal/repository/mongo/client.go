@@ -3,9 +3,9 @@ package mongo
 import (
 	"context"
 
-	"go.mongodb.org/mongo-driver/event"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/event"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 )
@@ -50,7 +50,7 @@ func NewClient(ctx context.Context, config MongoConfig, logger *zap.Logger, mete
 }
 
 func (m *mongoClient) Connect(ctx context.Context) error {
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(m.config.URL).SetMonitor(m.monitor))
+	client, err := mongo.Connect(options.Client().ApplyURI(m.config.URL).SetMonitor(m.monitor))
 	if err != nil {
 		return err
 	}
