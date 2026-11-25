@@ -8,6 +8,7 @@ GoFxTest is a starter project built with [Go](https://golang.org/) and [Uber FX]
 - REST API with [Gin](https://github.com/gin-gonic/gin)
 - MongoDB integration
 - RabbitMQ pub/sub
+- OpenTelemetry metrics exported in Prometheus format on `/metrics`
 - Example `events` CRUD resource showing how the layers fit together
 - Swagger API documentation
 - Makefile for common development tasks
@@ -92,7 +93,21 @@ Each create, update and delete publishes the event to the RabbitMQ topic `event-
 
 To add your own resource, follow the same layers and register its constructors in `cmd/server/main.go`. Register HTTP routes with `asRouteHandler(...)`. To start a project without the example, remove those files and their registrations.
 
-The template's own endpoints are `GET /health` (health check) and `/swagger/*` (API docs).
+The template's own endpoints are `GET /health` (health check), `GET /metrics` (Prometheus metrics) and `/swagger/*` (API docs).
+
+## Metrics
+
+Metrics are collected with the [OpenTelemetry](https://opentelemetry.io/) SDK and exposed on `GET /metrics` in Prometheus format:
+
+| Metric                                  | Source                                                            |
+|-----------------------------------------|-------------------------------------------------------------------|
+| `http_server_request_duration_seconds`  | Every HTTP request, labelled by route, method and status (`otelgin`) |
+| `db_client_operation_duration_seconds`  | Every MongoDB command, labelled by operation and status           |
+| `messaging_client_published_messages_total` | Messages published to RabbitMQ, labelled by topic and status  |
+| `messaging_process_duration_seconds`    | Duration of the subscriber handlers, labelled by topic            |
+| `go_*`, `process_*`                     | Go runtime and process metrics                                    |
+
+`target_info` carries the service name from `NAME`. To add your own metrics, inject `metric.MeterProvider` into a constructor and create instruments from `meterProvider.Meter("<package path>")`.
 
 ## Makefile Commands
 

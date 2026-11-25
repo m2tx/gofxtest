@@ -8,6 +8,8 @@ import (
 	"github.com/m2tx/gofxtest/internal/http"
 	"github.com/m2tx/gofxtest/internal/queue"
 	"github.com/m2tx/gofxtest/internal/repository/mongo"
+	"github.com/m2tx/gofxtest/internal/telemetry"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/fx"
 	"go.uber.org/fx/fxevent"
 	"go.uber.org/zap"
@@ -24,6 +26,13 @@ func main() {
 		fx.Provide(env.New[http.HttpConfig]),
 		fx.Provide(env.New[mongo.MongoConfig]),
 		fx.Provide(env.New[queue.RabbitMQConfig]),
+		fx.Provide(env.New[telemetry.MetricsConfig]),
+		fx.Provide(telemetry.NewRegistry),
+		fx.Provide(fx.Annotate(
+			telemetry.NewMeterProvider,
+			fx.As(fx.Self()),
+			fx.As(new(metric.MeterProvider)),
+		)),
 		fx.Provide(asQueue(queue.NewRabbitMQ)),
 		fx.Provide(mongo.NewClient),
 		fx.Provide(mongo.NewEventRepository),
@@ -35,12 +44,14 @@ func main() {
 		fx.Provide(asRouteHandler(http.NewHealthcheckRoute)),
 		fx.Provide(asRouteHandler(http.NewSwaggerRoute)),
 		fx.Provide(asRouteHandler(http.NewEventRoute)),
+		fx.Provide(asRouteHandler(http.NewMetricsRoute)),
 		fx.Provide(configLogger),
 		fx.WithLogger(func(log *zap.Logger) fxevent.Logger {
 			return &fxevent.ZapLogger{
 				Logger: log,
 			}
 		}),
+		fx.Invoke(meterProviderShutdown),
 		fx.Invoke(mongoDisconnect),
 		fx.Invoke(startHTTPServer),
 		fx.Invoke(subscriber),
@@ -113,6 +124,14 @@ func mongoDisconnect(lc fx.Lifecycle, client mongo.MongoClient) {
 	lc.Append(fx.Hook{
 		OnStop: func(ctx context.Context) error {
 			return client.Disconnect(ctx)
+		},
+	})
+}
+
+func meterProviderShutdown(lc fx.Lifecycle, provider telemetry.MeterProvider) {
+	lc.Append(fx.Hook{
+		OnStop: func(ctx context.Context) error {
+			return provider.Shutdown(ctx)
 		},
 	})
 }

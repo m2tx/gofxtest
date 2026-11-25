@@ -7,6 +7,9 @@ import (
 	"github.com/m2tx/gofxtest/internal/env"
 	"github.com/m2tx/gofxtest/internal/repository/mongo"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/otel/metric/noop"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.uber.org/zap"
 )
 
@@ -21,7 +24,7 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic(err)
 	}
-	client, err = mongo.NewClient(ctx, config, zap.NewNop())
+	client, err = mongo.NewClient(ctx, config, zap.NewNop(), noop.NewMeterProvider())
 	if err != nil {
 		panic(err)
 	}
@@ -45,7 +48,7 @@ func TestMongoClient(t *testing.T) {
 
 		mongoConfig.Database = "testdb"
 
-		client, err := mongo.NewClient(ctx, mongoConfig, zap.NewNop())
+		client, err := mongo.NewClient(ctx, mongoConfig, zap.NewNop(), noop.NewMeterProvider())
 		assert.NotNil(t, client)
 		assert.NoError(t, err)
 
@@ -59,4 +62,34 @@ func TestMongoClient(t *testing.T) {
 		err = client.Disconnect(ctx)
 		assert.NoError(t, err)
 	})
+}
+
+func TestMongoClientMetrics(t *testing.T) {
+	mongoConfig, err := env.New[mongo.MongoConfig]()
+	assert.NoError(t, err)
+
+	reader := sdkmetric.NewManualReader()
+	provider := sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader))
+
+	client, err := mongo.NewClient(ctx, mongoConfig, zap.NewNop(), provider)
+	assert.NoError(t, err)
+	defer func() {
+		assert.NoError(t, client.Disconnect(ctx))
+	}()
+
+	_, err = client.Database().ListCollectionNames(ctx, map[string]any{})
+	assert.NoError(t, err)
+
+	var rm metricdata.ResourceMetrics
+	assert.NoError(t, reader.Collect(ctx, &rm))
+
+	found := false
+	for _, sm := range rm.ScopeMetrics {
+		for _, m := range sm.Metrics {
+			if m.Name == "db.client.operation.duration" {
+				found = true
+			}
+		}
+	}
+	assert.True(t, found, "db.client.operation.duration recorded")
 }
