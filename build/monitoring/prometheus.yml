@@ -1,0 +1,10 @@
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+
+scrape_configs:
+  # The service runs on the host (`make run`), reached through host-gateway.
+  - job_name: gofxtest
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["host.docker.internal:8080"]

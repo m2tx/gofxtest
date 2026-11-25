@@ -11,6 +11,7 @@ Go 1.27 starter service built on Uber FX (dependency injection) with a Gin HTTP 
 Most Makefile targets run inside Docker (see `build/`), so Docker is required.
 
 - `make env-up` / `make env-down`: start/stop MongoDB (27017) and RabbitMQ (5672, management UI on 15672) via `build/docker-compose.yml`. `make env-up-mongo` starts only Mongo.
+- `make env-up-monitoring` / `make run-monitoring`: also start Prometheus (9090) and Grafana (3000, anonymous admin) from the `monitoring` compose profile, so `make env-up`, `make run` and CI never start them. Prometheus scrapes the app running on the host at `host.docker.internal:8080`. Config, the provisioned datasource and the `gofxtest` dashboard live in `build/monitoring/`. `env-down`/`env-stop`/`env-start` act on every profile.
 - `make run`: brings up the environment, loads `.env` (gitignored; keys: `NAME`, `HTTP_PORT`, `MONGO_URL`, `MONGO_DATABASE`, `RABBITMQ_URL`) and runs `go run ./cmd/server/main.go`.
 - `make build`: builds the binary in the Dockerfile `build` stage. `make image` builds the runtime image.
 - `make test`: starts Mongo, runs `go test ./...` inside the Dockerfile `test` stage on the compose network, and copies coverage into `coverage/` (mock files are excluded from coverage). `make coverage` also opens the HTML report.
