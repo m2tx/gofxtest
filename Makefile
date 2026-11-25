@@ -33,17 +33,20 @@ guard-%:
 env-up:
 	@make __compose COMPOSE_COMMAND="up -d"
 
+env-up-monitoring:
+	@make __compose COMPOSE_COMMAND="--profile monitoring up -d"
+
 env-up-%:
 	@make __compose COMPOSE_COMMAND="up -d $*"
 
-env-start: 
-	@make __compose COMPOSE_COMMAND="start"
+env-start:
+	@make __compose COMPOSE_COMMAND="--profile '*' start"
 
-env-stop: 
-	@make __compose COMPOSE_COMMAND="stop"
+env-stop:
+	@make __compose COMPOSE_COMMAND="--profile '*' stop"
 
 env-down:
-	@make __compose COMPOSE_COMMAND="down"
+	@make __compose COMPOSE_COMMAND="--profile '*' down"
 
 install:
 	go mod vendor
@@ -110,4 +113,6 @@ publish: image
 destroy: test-clean env-down
 
 run: env-up
-	export $(shell grep -v '^#' .env | xargs) && go run ./cmd/server/main.go	
+	export $(shell grep -v '^#' .env | xargs) && go run ./cmd/server/main.go
+
+run-monitoring: env-up-monitoring run	

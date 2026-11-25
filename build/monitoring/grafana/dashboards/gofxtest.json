@@ -1,0 +1,116 @@
+{
+  "uid": "gofxtest",
+  "title": "gofxtest",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "5s",
+  "time": { "from": "now-15m", "to": "now" },
+  "tags": ["gofxtest"],
+  "panels": [
+    {
+      "type": "row", "title": "HTTP", "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 }
+    },
+    {
+      "type": "timeseries", "title": "Requests/s by route and status",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 1 },
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] },
+      "targets": [{
+        "refId": "A",
+        "expr": "sum by (http_request_method, http_route, http_response_status_code) (rate(http_server_request_duration_seconds_count[1m]))",
+        "legendFormat": "{{http_request_method}} {{http_route}} {{http_response_status_code}}"
+      }]
+    },
+    {
+      "type": "timeseries", "title": "Latency p95 by route",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 1 },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "targets": [{
+        "refId": "A",
+        "expr": "histogram_quantile(0.95, sum by (le, http_request_method, http_route) (rate(http_server_request_duration_seconds_bucket[1m])))",
+        "legendFormat": "{{http_request_method}} {{http_route}}"
+      }]
+    },
+    {
+      "type": "row", "title": "MongoDB", "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 9 }
+    },
+    {
+      "type": "timeseries", "title": "Operations/s",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 10 },
+      "fieldConfig": { "defaults": { "unit": "ops" }, "overrides": [] },
+      "targets": [{
+        "refId": "A",
+        "expr": "sum by (db_operation_name, status) (rate(db_client_operation_duration_seconds_count[1m]))",
+        "legendFormat": "{{db_operation_name}} {{status}}"
+      }]
+    },
+    {
+      "type": "timeseries", "title": "Operation latency p95",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 10 },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "targets": [{
+        "refId": "A",
+        "expr": "histogram_quantile(0.95, sum by (le, db_operation_name) (rate(db_client_operation_duration_seconds_bucket[1m])))",
+        "legendFormat": "{{db_operation_name}}"
+      }]
+    },
+    {
+      "type": "row", "title": "RabbitMQ", "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 18 }
+    },
+    {
+      "type": "timeseries", "title": "Published messages/s by topic",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 19 },
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "targets": [{
+        "refId": "A",
+        "expr": "sum by (messaging_destination_name, status) (rate(messaging_client_published_messages_total[1m]))",
+        "legendFormat": "{{messaging_destination_name}} {{status}}"
+      }]
+    },
+    {
+      "type": "timeseries", "title": "Consume handler latency p95 by topic",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 19 },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "targets": [{
+        "refId": "A",
+        "expr": "histogram_quantile(0.95, sum by (le, messaging_destination_name) (rate(messaging_process_duration_seconds_bucket[1m])))",
+        "legendFormat": "{{messaging_destination_name}}"
+      }]
+    },
+    {
+      "type": "row", "title": "Runtime", "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 27 }
+    },
+    {
+      "type": "timeseries", "title": "Goroutines",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 28 },
+      "targets": [{ "refId": "A", "expr": "go_goroutine_count", "legendFormat": "goroutines" }]
+    },
+    {
+      "type": "timeseries", "title": "Memory",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 28 },
+      "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
+      "targets": [
+        { "refId": "A", "expr": "sum(go_memory_used_bytes)", "legendFormat": "go memory used" },
+        { "refId": "B", "expr": "process_resident_memory_bytes", "legendFormat": "RSS" }
+      ]
+    },
+    {
+      "type": "timeseries", "title": "CPU",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 28 },
+      "fieldConfig": { "defaults": { "unit": "percentunit" }, "overrides": [] },
+      "targets": [{ "refId": "A", "expr": "rate(process_cpu_seconds_total[1m])", "legendFormat": "cpu" }]
+    }
+  ]
+}
